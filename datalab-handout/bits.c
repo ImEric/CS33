@@ -154,7 +154,13 @@ NOTES:
  *   Rating: 4
  */
 int bitParity(int x) {
-  return 2;
+    x ^= x >> 16;
+    x ^= x >> 8;
+    x ^= x >> 4;
+    x ^= x >> 2;
+    x ^= x >> 1;
+    x &= 1;
+    return x;
 }
 /* 
  * rotateRight - Rotate x to the right by n
@@ -164,9 +170,22 @@ int bitParity(int x) {
  *   Max ops: 25
  *   Rating: 3 
  */
+
 int rotateRight(int x, int n) {
-  return 2;
+
+  int isnzero = (!n);
+  int utils = isnzero << 31 >> 31;
+  int leftshift = 32 + (~n+1);
+  int sign = x >> 31 << leftshift;
+  int rightshift = n;
+  int temp = x << leftshift;
+  int temp2 = x >> rightshift ^ sign;
+  int nonzero = (~utils)&(temp + temp2);
+  int zero = (utils&x);
+  return ( nonzero + zero);
+  
 }
+
 /* 
  * byteSwap - swaps the nth byte and the mth byte
  *  Examples: byteSwap(0x12345678, 1, 3) = 0x56341278
@@ -178,10 +197,17 @@ int rotateRight(int x, int n) {
  */
 int byteSwap(int x, int n, int m) {
 
-
-
-    return 2;
-
+  int nstep = (n<<3);
+  int mstep = (m<<3);
+  int num_n = 0xFF << nstep;
+  int num_m = 0xFF << mstep;
+  int byten = x & num_n;
+  int bytem = x & num_m;
+  int otherbytes = x & (~(byten|bytem));
+  int newn = ((bytem >> mstep)&0xFF) << nstep;
+  int newm = ((byten >> nstep)&0xFF) << mstep;
+  int result =  otherbytes | newn | newm;
+  return result;
 }
 /* 
  * fitsShort - return 1 if x can be represented as a 
@@ -192,7 +218,9 @@ int byteSwap(int x, int n, int m) {
  *   Rating: 1
  */
 int fitsShort(int x) {
-  return 2;
+  int sign = x >> 31;
+  int test = x >> 15;
+  return (!(sign ^ test));
 }
 /* 
  * bitAnd - x&y using only ~ and | 
@@ -202,7 +230,9 @@ int fitsShort(int x) {
  *   Rating: 1
  */
 int bitAnd(int x, int y) {
-  return 2;
+    int negx = ~x;
+    int negy = ~y;
+    return (~(negx|negy));
 }
 /* 
  * subOK - Determine if can compute x-y without overflow
@@ -213,7 +243,17 @@ int bitAnd(int x, int y) {
  *   Rating: 3
  */
 int subOK(int x, int y) {
-  return 2;
+  int xsign = x >> 31;
+  int ysign = y >> 31;
+  int issamesign = !(xsign ^ ysign);
+  int diff = x+(~y+1);
+  int diffsign = diff >> 31;
+  int signunchanged = !(xsign ^ diffsign);
+  int diffiszero = !(diff ^ 0);
+  // positive overflow = >tmax --> pos/0 - neg
+  // negative overflow = <tmin --> neg - pos
+  int result = ((!issamesign) & signunchanged) | diffiszero | issamesign; 
+  return result;
 }
 /* 
  * isGreater - if x > y  then return 1, else return 0 
@@ -223,7 +263,20 @@ int subOK(int x, int y) {
  *   Rating: 3
  */
 int isGreater(int x, int y) {
-  return 2;
+  int signx = x >>31;
+  int signy = y >>31;
+  int opposite = !!(signx ^ signy);
+  //if same sign
+  int diff = x+(~y+1);
+  int sign = diff >> 31;
+  int greater = (!sign & !!(diff ^ 0));
+  //if x pos and y neg
+  int xpos_yneg = opposite&(!signx);
+  //if y pos and x neg
+  int xneg_ypos = opposite&(!signy);
+
+  int result = xpos_yneg | (greater & (!xneg_ypos));
+  return result;
 }
 /* 
  * fitsBits - return 1 if x can be represented as an 
@@ -235,7 +288,10 @@ int isGreater(int x, int y) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return 2;
+  int sign = x >> 31;
+  int nminus1 = ~(~n+1);
+  int test = x >> nminus1;
+  return (!(sign ^ test));
 }
 /* 
  * negate - return -x 
@@ -245,7 +301,8 @@ int fitsBits(int x, int n) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  
+  return (~x+1);
 }
 /*
  * isTmax - returns 1 if x is the maximum, two's complement number,
@@ -255,5 +312,8 @@ int negate(int x) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  int tmin1 = ~x;
+  int tmin2 = x + 1;
+  int result = !(tmin1 ^ tmin2) & (!!tmin2); // tmin1 == tmin2 && tmin2 != 0
+  return result;
 }
