@@ -41,8 +41,6 @@ void Func2(int d[][MSIZE], int c[][MSIZE])
 }
 
 
-
-
 void Func3(int z[][MSIZE], int d[][MSIZE])
 {
   int y, x,blockrow,blockcolumn;
@@ -163,135 +161,50 @@ void Func3(int z[][MSIZE], int d[][MSIZE])
 }
 
 
-
-
-
-
 /*
 
 void Func3(int z[][MSIZE], int d[][MSIZE])
 {
-  int y, x, blockrow,blockcolumn;
+  int y, x, blockrow,blockcolumn,current;
   int near = 1;  // The weight of neighbor
   int itself = 42; // The weight of center
 
 
-#pragma omp parallel shared(z,d) private(blockrow,blockcolumn,x,y)
-  {
-    #pragma omp for
-
     for (blockrow = 0; blockrow < MSIZE; blockrow += BLOCKSIZE) {
       for (blockcolumn = 0; blockcolumn < MSIZE; blockcolumn += BLOCKSIZE) {
 	for (y = blockrow; y < blockrow + BLOCKSIZE; y++) {
+	  int top = (y==0) ? y : y-1;
+	  int bot = (y==MSIZE-1) ? y : y+1;
 	  for (x = blockcolumn; x < blockcolumn + BLOCKSIZE; x++) {
-	    int current = itself * d[y][x];
-
-	    if (y==0) {
-	      if (x==0) {
-		current +=  d[y][x] +
-		   d[y][x+1] +
-		   d[y+1][x] +
-		   d[y+1][x+1] +
-		   d[y][x] +
-		   d[y][x+1] +
-		   d[y][x] +
-		  d[y+1][x];
-	      } else if (x==MSIZE-1) {
-		current +=  d[y][x-1] +
-		   d[y][x] +
-		   d[y+1][x-1] +
-		   d[y+1][x] +
-		   d[y][x-1] +
-		   d[y][x] +
-		   d[y][x] +
-		  d[y+1][x];
-	      } else {
-		current +=  d[y][x-1] +
-		   d[y][x+1] +
-		   d[y+1][x-1] +
-		   d[y+1][x+1] +
-		   d[y][x-1] +
-		   d[y][x+1] +
-		   d[y][x] +
-		  d[y+1][x];
-	      }
-	    } else if (y==MSIZE-1) {
-	      if (x==0) {
-		current +=  d[y-1][x] +
-		   d[y-1][x+1] +
-		   d[y][x] +
-		   d[y][x+1] +
-		   d[y][x] +
-		   d[y][x+1] +
-		   d[y-1][x] +
-		  d[y][x];
-	      } else if (x==MSIZE-1) {
-		current +=  d[y-1][x-1] +
-		   d[y-1][x] +
-		   d[y][x-1] +
-		   d[y][x] +
-		   d[y][x-1] +
-		   d[y][x] +
-		   d[y-1][x] +
-		  d[y][x];
-	      } else {
-		current +=  d[y-1][x-1] +
-		   d[y-1][x+1] +
-		   d[y][x-1] +
-		   d[y][x+1] +
-		   d[y][x-1] +
-		   d[y][x+1] +
-		   d[y-1][x] +
-		  d[y][x];
-	      }
-	    } else {
-	      if (x==0) {
-		current +=  d[y-1][x] +
-		   d[y-1][x+1] +
-		   d[y+1][x] +
-		   d[y+1][x+1] +
-		   d[y][x] +
-		   d[y][x+1] +
-		   d[y-1][x] +
-		  d[y+1][x];
-	      } else if (x==MSIZE-1) {
-		current +=  d[y-1][x-1] +
-		   d[y-1][x] +
-		   d[y+1][x-1] +
-		   d[y+1][x] +
-		   d[y][x-1] +
-		   d[y][x] +
-		   d[y-1][x] +
-		  d[y+1][x];
-	      } else {
-		current +=  d[y-1][x-1] +
-		   d[y-1][x+1] +
-		   d[y+1][x-1] +
-		   d[y+1][x+1] +
-		   d[y][x-1] +
-		   d[y][x+1] +
-		   d[y-1][x] +
-		  d[y+1][x];
-	      }
-	    }
-	    current/=50;
-	    z[y][x] = current;
+	    int left = (x==0) ? x : x-1;
+	    int right = (x==MSIZE-1) ? x : x+1;
+	    current = itself * d[y][x];
+	         current += d[top][left]
+		   + d[top][x]
+		   + d[top][right]
+		   + d[y][left]
+		   + d[y][right]
+		   + d[bot][left]
+		   + d[bot][x]
+		   + d[bot][right];
+	         current/=50;
+		z[y][x] = current;
 	  }
 	}
       }
     }
-  }
 }
 
-*/
 
+*/
 
 void Func4(int b[], int a[])
 {
   int chuck_size=MSIZE;
   int array_size=VSIZE/chuck_size;
   int chuck[chuck_size];
-  int i, j;
+  int i, j, sum;
+  
 #pragma omp parallel shared(chuck,b) private(i,j)
   {
     #pragma omp for
@@ -306,10 +219,12 @@ void Func4(int b[], int a[])
     }
   }
 
- 
-  for(j=1; j<chuck_size; j++) {
-    int temp = chuck[j];
-    chuck[j]=chuck[j-1]+temp;
+  sum = 0;
+
+
+  for(j=0; j<chuck_size-1; j++) {
+    sum += chuck[j];
+    chuck[j] = sum;
   }
  
 
@@ -330,52 +245,45 @@ void Func4(int b[], int a[])
 void Func5(int b[], int a[])
 {
   int i=0, j,  stride, stride2, step;
-  int temp,pos;
+  int temp;
   long log_N=log2(VSIZE);
+
   
 #pragma omp parallel shared(b) private(j)
 {
 #pragma omp for
 
-for(j=0; j<VSIZE; j+=2) {
-int temp = a[j];
-b[j]=temp;
-b[j+1] = temp + a[j+1];
-}
-}
-  
-  /*
   for(j=0; j<VSIZE; j+=2) {
     int temp = a[j];
     b[j]=temp;
     b[j+1] = temp + a[j+1];
   }
-*/
+}
 
-
-  for(i=4; i<VSIZE; i<<=1) {
-    for(j=0; j<VSIZE; j+=i) {
-      pos = j+i-1;
-      temp = b[j+i/2-1] + b[pos];
-      b[pos] = temp;
-    }
-  }
+ for(i=4; i<VSIZE; i<<=1) {
+#pragma omp paralell for private(j)
+   for(j=0; j<VSIZE; j+=i) {
+     int pos = j+i-1;
+     int temp1 = b[j+i/2-1];
+     int temp2 = b[pos];
+     b[pos] = temp1+temp2;
+     
+     
+   }
+ }
 
  
   b[VSIZE-1]=0;
 
-  for(i=(log_N-1); i>=0; i--) {
-    stride2=(2<<i)-1;
-    stride=(1<<i)-1;
-    step=stride2+1;
+  for(i=(log_N-1);i>=0; i--) {
     int pow_i = (int)(pow(2, i));
     int pow_i1 = (int)(pow(2, i+1));
-
+#pragma omp parallel for shared(b) private(j)
     for(j=0; j<VSIZE; j+=pow_i1) {
-      temp=b[j+pow_i-1];
-      b[j+pow_i-1] = b[j+pow_i1-1];
-      b[j+pow_i1-1] = temp+b[j+pow_i1-1];
+      int temp1=b[j+pow_i-1];
+      int temp2=b[j+pow_i1-1];
+      b[j+pow_i-1] = temp2;
+      b[j+pow_i1-1] = temp1+temp2;
     }
   }
-  
 }
